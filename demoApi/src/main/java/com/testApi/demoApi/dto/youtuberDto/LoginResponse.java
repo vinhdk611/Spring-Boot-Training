@@ -1,0 +1,14 @@
+package com.testApi.demoApi.dto.youtuberDto;
+
+import lombok.*;
+import lombok.experimental.FieldDefaults;
+
+@Data
+@AllArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
+@NoArgsConstructor
+@Builder
+public class LoginResponse {
+    String token;
+    boolean authenticated;
+}
