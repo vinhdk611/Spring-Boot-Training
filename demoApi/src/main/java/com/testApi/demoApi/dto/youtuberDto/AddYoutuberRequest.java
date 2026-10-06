@@ -28,4 +28,6 @@ public class AddYoutuberRequest {
     String description;
 
     String country;
+
+    String roles;
 }

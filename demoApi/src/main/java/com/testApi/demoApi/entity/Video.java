@@ -11,6 +11,7 @@ import java.time.LocalDate;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Video {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

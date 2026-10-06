@@ -14,6 +14,7 @@ public interface YoutuberMapper {
     @Mapping(target = "country", source = "country.name")
     YoutuberResponse toResponse(Youtuber youtuber);
 
+    @Mapping(target = "roles", ignore = true)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "displayName", ignore = true)
     @Mapping(target = "videos", ignore = true)

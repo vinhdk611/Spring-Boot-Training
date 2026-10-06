@@ -5,6 +5,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.util.List;
+import java.util.Set;
 
 @Data
 @AllArgsConstructor
@@ -20,4 +21,5 @@ public class YoutuberResponse {
     String description;
     String country;
     List<VideoResponse> videos;
+    String roles;
 }

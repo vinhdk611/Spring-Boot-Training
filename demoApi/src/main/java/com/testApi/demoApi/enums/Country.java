@@ -1,9 +1,8 @@
-package com.testApi.demoApi.entity;
+package com.testApi.demoApi.enums;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 
 @Getter

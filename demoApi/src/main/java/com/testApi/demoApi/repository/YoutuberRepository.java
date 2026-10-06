@@ -9,4 +9,6 @@ import java.util.Optional;
 @Repository
 public interface YoutuberRepository extends JpaRepository<Youtuber, Long> {
     Optional<Youtuber> findByEmail(String email);
+
+    boolean existsByUsername(String username);
 }

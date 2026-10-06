@@ -5,17 +5,17 @@ import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
-import com.testApi.demoApi.dto.ApiResponse;
 import com.testApi.demoApi.dto.youtuberDto.*;
-import com.testApi.demoApi.entity.Country;
+import com.testApi.demoApi.enums.Country;
 import com.testApi.demoApi.entity.Youtuber;
+import com.testApi.demoApi.enums.Role;
 import com.testApi.demoApi.exception.AppException;
 import com.testApi.demoApi.exception.ErrorCode;
 import com.testApi.demoApi.mapper.VideoMapper;
 import com.testApi.demoApi.mapper.YoutuberMapper;
 import com.testApi.demoApi.repository.YoutuberRepository;
 import com.testApi.demoApi.service.YoutuberService;
-import lombok.experimental.NonFinal;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -25,14 +25,15 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 
 @Service
 public class YoutuberServiceImpl implements YoutuberService {
 
     //dung nonfinal de cai field nay ko bi tu inject vao constructor
-    @NonFinal
-    protected static final String SIGNER_KEY = "b8e6d9754bcfd28eb40665c59e5ea1e8e278c14a07e85512daa81a0743b6f056";
+    @Value("${app.signer-key}")
+    protected String signerKey;
 
     private final YoutuberRepository youtuberRepository;
     private final YoutuberMapper youtuberMapper;
@@ -73,12 +74,14 @@ public class YoutuberServiceImpl implements YoutuberService {
         if (id == null) {
             youtuber = new Youtuber();
             youtuberMapper.toYoutuber(request, youtuber);
+            youtuber.setRoles(Role.USER.name());
             youtuber.setDisplayName(createDisplayName(youtuber.getUsername()));
         } else {
             youtuber = youtuberRepository.findById(id)
                     .orElseThrow(() -> new AppException(ErrorCode.YOUTUBER_NOT_FOUND));
 
             youtuberMapper.toYoutuber(request, youtuber);
+            youtuber.setRoles(request.getRoles());
         }
         youtuber.setCountry(fromName(request.getCountry()));
         youtuber.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -114,7 +117,7 @@ public class YoutuberServiceImpl implements YoutuberService {
 
         return LoginResponse.builder()
                 .authenticated(true)
-                .token(generateToken(youtuber.getUsername()))
+                .token(generateToken(youtuber))
                 .build();
     }
 
@@ -124,7 +127,7 @@ public class YoutuberServiceImpl implements YoutuberService {
 
         try {
             //object dùng khai báo thuật toán trước đó đã dùng để hash Signature để xác thực lại với mã Secret Key
-            JWSVerifier jwsVerifier = new MACVerifier(SIGNER_KEY.getBytes());
+            JWSVerifier jwsVerifier = new MACVerifier(signerKey.getBytes());
 
             //lớp con của JWSObject, đại diện cho đôi tượng JWT có signature xác định
             SignedJWT signedJWT = SignedJWT.parse(token);
@@ -176,20 +179,20 @@ public class YoutuberServiceImpl implements YoutuberService {
         throw new IllegalArgumentException("Unknown country: " + name);
     }
 
-    private String generateToken(String username) {
+    private String generateToken(Youtuber youtuber) {
 
         //dinh nghia thuat toan duoc su dung
         JWSHeader jwsHeader = new JWSHeader(JWSAlgorithm.HS256);
 
         // data ben trong body
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
-                .subject(username) //đại diện user đăng nhập
+                .subject(youtuber.getUsername()) //đại diện user đăng nhập
                 .issuer("VinhDinh") //xac dinh token duoc issuer tu ai, thuong la domain service
                 .issueTime(new Date())
                 .expirationTime(new Date(
                         Instant.now().plus(1, ChronoUnit.HOURS).toEpochMilli()
                 ))
-                .claim("claim", "custom") //tự tạo field cho object JWT
+                .claim("scope", youtuber.getRoles()) //tự tạo field cho object JWT, tạo scope để token có role
                 .build();
 
         Payload payload = new Payload(jwtClaimsSet.toJSONObject());
@@ -200,7 +203,7 @@ public class YoutuberServiceImpl implements YoutuberService {
             /*hàm sign sẽ tạo Signature, là chữ ký tạo bởi thuật toán(ở đây đang dùng thuật toán HMAC - MACSigner)
             thuật toán sẽ hash header, payload và secret key
              */
-            jwsObject.sign(new MACSigner(SIGNER_KEY));
+            jwsObject.sign(new MACSigner(signerKey));
             return jwsObject.serialize();
         } catch (JOSEException e) {
             throw new RuntimeException(e);

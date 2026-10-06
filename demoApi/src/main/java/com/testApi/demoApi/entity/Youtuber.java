@@ -1,11 +1,13 @@
 package com.testApi.demoApi.entity;
 
+import com.testApi.demoApi.enums.Country;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -13,6 +15,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@Builder
 public class Youtuber {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,6 +41,9 @@ public class Youtuber {
 
     @Enumerated(EnumType.STRING)
     Country country;
+
+    @Column(name = "roles", columnDefinition = "VARCHAR(50)")
+    String roles;
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "youtuber")
     List<Video> videos = new ArrayList<>();
