@@ -95,4 +95,13 @@ public class YoutuberController {
                 .result(youtuberService.introspectToken(request))
                 .build();
     }
+
+    @GetMapping("/myInfo")
+    public ApiResponse<YoutuberResponse> getMyYoutuberProfile() {
+        return ApiResponse.<YoutuberResponse>builder()
+                .code(200)
+                .message("Youtuber with token")
+                .result(youtuberService.getContextHolderYoutuber())
+                .build();
+    }
 }

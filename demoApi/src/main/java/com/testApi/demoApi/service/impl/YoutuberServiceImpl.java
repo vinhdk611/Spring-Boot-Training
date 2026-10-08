@@ -6,16 +6,21 @@ import com.nimbusds.jose.crypto.MACVerifier;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.testApi.demoApi.dto.youtuberDto.*;
+import com.testApi.demoApi.entity.Role;
 import com.testApi.demoApi.enums.Country;
 import com.testApi.demoApi.entity.Youtuber;
-import com.testApi.demoApi.enums.Role;
 import com.testApi.demoApi.exception.AppException;
 import com.testApi.demoApi.exception.ErrorCode;
+import com.testApi.demoApi.mapper.RoleMapper;
 import com.testApi.demoApi.mapper.VideoMapper;
 import com.testApi.demoApi.mapper.YoutuberMapper;
+import com.testApi.demoApi.repository.RoleRepository;
 import com.testApi.demoApi.repository.YoutuberRepository;
 import com.testApi.demoApi.service.YoutuberService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -27,8 +32,11 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class YoutuberServiceImpl implements YoutuberService {
 
     //dung nonfinal de cai field nay ko bi tu inject vao constructor
@@ -38,12 +46,9 @@ public class YoutuberServiceImpl implements YoutuberService {
     private final YoutuberRepository youtuberRepository;
     private final YoutuberMapper youtuberMapper;
     private final VideoMapper videoMapper;
+    private final RoleRepository roleRepository;
+    private final RoleMapper roleMapper;
 
-    public YoutuberServiceImpl(YoutuberRepository youtuberRepository, YoutuberMapper youtuberMapper, VideoMapper videoMapper) {
-        this.youtuberRepository = youtuberRepository;
-        this.youtuberMapper = youtuberMapper;
-        this.videoMapper = videoMapper;
-    }
 
     @Transactional(readOnly = true)
     @Override
@@ -71,24 +76,34 @@ public class YoutuberServiceImpl implements YoutuberService {
         Youtuber youtuber;
         //10 ở đây là độ mạnh của mk
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
+        Set<Role> roles = new HashSet<>();
+        roles.add(roleRepository.findById("STAFF").orElseThrow(
+                () -> new AppException(ErrorCode.ROLE_NOT_FOUND)
+        ));
         if (id == null) {
             youtuber = new Youtuber();
             youtuberMapper.toYoutuber(request, youtuber);
-            youtuber.setRoles(Role.USER.name());
             youtuber.setDisplayName(createDisplayName(youtuber.getUsername()));
         } else {
             youtuber = youtuberRepository.findById(id)
                     .orElseThrow(() -> new AppException(ErrorCode.YOUTUBER_NOT_FOUND));
 
             youtuberMapper.toYoutuber(request, youtuber);
-            youtuber.setRoles(request.getRoles());
+            if(!request.getRoles().isEmpty()){
+                request.getRoles().forEach(roleId -> {
+                    Role  role = roleRepository.findById(roleId).orElseThrow(() -> new AppException(ErrorCode.ROLE_NOT_FOUND));
+                    roles.add(role);
+                });
+            }
         }
+        youtuber.setRoles(roles);
         youtuber.setCountry(fromName(request.getCountry()));
         youtuber.setPassword(passwordEncoder.encode(request.getPassword()));
         Youtuber savedYoutuber = youtuberRepository.save(youtuber);
 
         YoutuberResponse youtuberResponse = youtuberMapper.toResponse(savedYoutuber);
         youtuberResponse.setVideos(savedYoutuber.getVideos().stream().map(videoMapper::toVideoResponse).toList());
+        youtuberResponse.setRoles(youtuber.getRoles().stream().map(roleMapper::toRoleResponse).collect(Collectors.toSet()));
         return youtuberResponse;
     }
 
@@ -148,6 +163,23 @@ public class YoutuberServiceImpl implements YoutuberService {
         }
     }
 
+    @Override
+    public YoutuberResponse getContextHolderYoutuber() {
+        /*
+        khi request được xác thực thành công, thông tin đăng nhập hay Authentication object sẽ
+        được lưu trong securitycontextholder
+         */
+        SecurityContext context = SecurityContextHolder.getContext();
+        //lấy đối tượng context được lưu
+        String name = context.getAuthentication().getName();
+
+        Youtuber youtuber = youtuberRepository.findByUsername(name).orElseThrow(
+                () -> new AppException(ErrorCode.YOUTUBER_NOT_FOUND)
+        );
+
+        return youtuberMapper.toResponse(youtuber);
+    }
+
     private String createDisplayName(String username) {
         if (username == null || username.isBlank()) {
             username = "YouTuber";
@@ -181,6 +213,8 @@ public class YoutuberServiceImpl implements YoutuberService {
 
     private String generateToken(Youtuber youtuber) {
 
+        var roles = youtuber.getRoles().stream().map(Role::getName).collect(Collectors.toSet());
+
         //dinh nghia thuat toan duoc su dung
         JWSHeader jwsHeader = new JWSHeader(JWSAlgorithm.HS256);
 
@@ -192,7 +226,7 @@ public class YoutuberServiceImpl implements YoutuberService {
                 .expirationTime(new Date(
                         Instant.now().plus(1, ChronoUnit.HOURS).toEpochMilli()
                 ))
-                .claim("scope", youtuber.getRoles()) //tự tạo field cho object JWT, tạo scope để token có role
+                .claim("scope", roles) //tự tạo field cho object JWT, tạo scope để token có role
                 .build();
 
         Payload payload = new Payload(jwtClaimsSet.toJSONObject());

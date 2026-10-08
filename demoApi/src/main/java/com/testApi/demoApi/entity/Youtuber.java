@@ -42,8 +42,8 @@ public class Youtuber {
     @Enumerated(EnumType.STRING)
     Country country;
 
-    @Column(name = "roles", columnDefinition = "VARCHAR(50)")
-    String roles;
+    @ManyToMany
+    Set<Role> roles;
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "youtuber")
     List<Video> videos = new ArrayList<>();

@@ -11,4 +11,6 @@ public interface YoutuberRepository extends JpaRepository<Youtuber, Long> {
     Optional<Youtuber> findByEmail(String email);
 
     boolean existsByUsername(String username);
+
+    Optional<Youtuber> findByUsername(String name);
 }

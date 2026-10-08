@@ -17,4 +17,6 @@ public interface YoutuberService {
     LoginResponse login(LoginRequest request);
 
     IntrospectResponse introspectToken(@Valid IntrospectRequest request);
+
+    YoutuberResponse getContextHolderYoutuber();
 }

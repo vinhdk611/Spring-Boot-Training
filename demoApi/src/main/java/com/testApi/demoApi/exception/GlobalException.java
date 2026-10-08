@@ -4,6 +4,7 @@ import com.testApi.demoApi.dto.ApiResponse;
 import org.antlr.v4.runtime.atn.ErrorInfo;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -20,7 +21,7 @@ public class GlobalException {
         catch (Exception ex){
             errorCode = ErrorCode.INVALID_KEY;
         }
-        return ResponseEntity.badRequest().body(
+        return ResponseEntity.status(errorCode.getStatus()).body(
                 ApiResponse.builder()
                         .code(errorCode.getCode())
                         .message(errorCode.getMessage())
@@ -50,11 +51,26 @@ public class GlobalException {
     ResponseEntity<ApiResponse> handlingAppException(AppException e) {
         ErrorCode errorCode = e.getErrorCode();
         //ko co ham handler nay ma dung ham handler cha --> ko lay duoc errorCode
-        return ResponseEntity.badRequest().body(
+        return ResponseEntity.status(errorCode.getStatus()).body(
                 ApiResponse.builder()
                         .code(errorCode.getCode())
                         .message(errorCode.getMessage())
                         .build());
     };
+
+    //dùng để handler khi vi phạm có quyền(ở mấy  chỗ check hasRole hay hasAuthorites )
+    @ExceptionHandler(value = AccessDeniedException.class)
+    ResponseEntity<ApiResponse> handlingAccessDeniedException(AccessDeniedException e) {
+        ErrorCode errorCode = ErrorCode.NO_PERMISSION;
+
+        return ResponseEntity.status(errorCode.getStatus()).body(
+                ApiResponse.builder()
+                        .code(errorCode.getCode())
+                        .message(errorCode.getMessage())
+                        .build()
+        );
+    }
+
+
 
 }

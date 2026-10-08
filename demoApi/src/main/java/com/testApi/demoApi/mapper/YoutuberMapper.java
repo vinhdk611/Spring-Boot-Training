@@ -10,6 +10,7 @@ import org.mapstruct.MappingTarget;
 @Mapper(componentModel = "spring")
 public interface YoutuberMapper {
 
+    @Mapping(target = "roles", ignore = true)
     @Mapping(target = "videos", ignore = true)
     @Mapping(target = "country", source = "country.name")
     YoutuberResponse toResponse(Youtuber youtuber);

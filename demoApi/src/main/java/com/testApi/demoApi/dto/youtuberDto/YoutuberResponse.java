@@ -1,5 +1,6 @@
 package com.testApi.demoApi.dto.youtuberDto;
 
+import com.testApi.demoApi.dto.roleDto.RoleResponse;
 import com.testApi.demoApi.dto.videoDto.VideoResponse;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -21,5 +22,5 @@ public class YoutuberResponse {
     String description;
     String country;
     List<VideoResponse> videos;
-    String roles;
+    Set<RoleResponse> roles;
 }

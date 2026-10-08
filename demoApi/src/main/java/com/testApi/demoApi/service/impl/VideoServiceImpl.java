@@ -8,6 +8,8 @@ import com.testApi.demoApi.exception.ErrorCode;
 import com.testApi.demoApi.mapper.VideoMapper;
 import com.testApi.demoApi.repository.VideoRepository;
 import com.testApi.demoApi.service.VideoService;
+import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +29,7 @@ public class VideoServiceImpl implements VideoService {
         this.videoMapper = videoMapper;
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @Override
     public List<VideoResponse> getList() {
         List<Video> videoList = videoRepository.findAll();
@@ -34,7 +37,9 @@ public class VideoServiceImpl implements VideoService {
         videoResponseList = videoList.stream().map((videoMapper::toVideoResponse)).toList();
         return videoResponseList;
     }
-
+    
+    //kiểm tra giá trị trả về (videoResponse) có bằng name của authentication ko
+    @PostAuthorize("returnObject.username == authentication.name")
     @Override
     public VideoResponse getById(Integer id) {
         Video video = videoRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.VIDEO_NOT_FOUND) );

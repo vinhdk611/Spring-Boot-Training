@@ -65,10 +65,11 @@ public class SercurityConfig {
                         - muốn nó ko dùng chữ SCOPE nữa thì cấu hình lại JWTAuthenticationConverter
                         - hasRole(): nó là hasAuthority("ROLE_...") --> phuơng thức kiểu role-based
                          */
-                        .requestMatchers(HttpMethod.GET, "/api/video").hasRole(Role.ADMIN.name())
+                        //.requestMatchers(HttpMethod.GET, "/api/video").hasRole(Role.ADMIN.name())
                         // anyRequest(): Đại diện cho TẤT CẢ các HTTP Request còn lại ngoài danh sách PUBLIC_ENDPOINTS.
                         // authenticated(): Bắt buộc các request còn lại phải được xác thực (phải truyền JWT Token hợp lệ).
                         .anyRequest().authenticated()
+                        
         );
 
         // =========================================================================
@@ -104,14 +105,19 @@ public class SercurityConfig {
          */
         http.oauth2ResourceServer(
                 // oauth2 - OAuth2ResourceServerConfigurer<HttpSecurity>: Đối tượng cấu hình cho vai trò Resource Server (nơi chứa API cần bảo vệ bằng OAuth2/JWT).
-                oauth2 -> oauth2.jwt(  // <--- B1: chỗ này new BearerTokenAuthenticationFilter
+                oauth2 -> oauth2
+                        .jwt(  // <--- B1: chỗ này new BearerTokenAuthenticationFilter
                         // jwtConfigurer - OAuth2ResourceServerConfigurer<HttpSecurity>.JwtConfigurer:
                         // Đối tượng chuyên cấu hình các chi tiết kỹ thuật cho JWT (như cài đặt Decoder, Authority Converter,...).
                         jwtConfigurer -> jwtConfigurer
                                 .decoder(// Gọi hàm jwtDecoder() bên dưới để truyền Bean bộ giải mã JWT vào
                                 jwtDecoder()) // <--- B2: Truyền decoder vào để tạo Provider
-                                .jwtAuthenticationConverter(jwtAuthenticationConverter()) //
+                                .jwtAuthenticationConverter(jwtAuthenticationConverter())
+
                 )
+                        //dùng để xử lý khi xác thực sai thì sẽ làm gì
+                        .authenticationEntryPoint(new JwtAuthenticationEntryPoint())
+
         );
 
         // =========================================================================

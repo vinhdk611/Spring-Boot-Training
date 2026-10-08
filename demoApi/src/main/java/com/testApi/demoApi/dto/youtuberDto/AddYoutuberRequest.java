@@ -5,6 +5,8 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.util.Set;
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -29,5 +31,5 @@ public class AddYoutuberRequest {
 
     String country;
 
-    String roles;
+    Set<String> roles;
 }
